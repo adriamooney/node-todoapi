@@ -1,3 +1,5 @@
+
+const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -67,6 +69,65 @@ app.get('/todos/:id', (req,res)=> {
 	//400 and send empty body
 });
 
+app.delete('/todos/:id', (req, res) => {
+	//get the id
+	//validate the id
+	//remove todo by id
+	//error 400 w/ empty boy
+	//success if no doc send 404
+	//if doc, send doc w/ 200
+	let id = req.params.id;
+	//res.send(req.params);
+
+	if(!ObjectID.isValid(id)) {
+		console.log('id is not valid');
+		res.status(404).send();
+	}
+	Todo.findByIdAndRemove(id).then((todo)=> {
+		if(!todo) {
+
+			res.status(404).send();
+		}
+		res.send({todo});
+		console.log('TodoById hello', todo);
+	}).catch((e) => {
+		res.status(400).send(e);
+	});
+});
+
+
+app.patch('/todos/:id', (req, res) => {
+	let id = req.params.id;
+	console.log(id);
+	//pick properties off of the object that we want users to be able to update
+	//using lodash pick
+	let body = _.pick(req.body, ['text', 'completed']);
+
+	if(!ObjectID.isValid(id)) {
+		console.log('id is not valid');
+		res.status(404).send({boo:'boo'});
+	}
+
+	if(_.isBoolean(body.completed) && body.completed) {
+		body.completedAt = new Date().getTime();
+	}
+	else {
+		body.completed = false;
+		//remove a value from db, just set to null
+		body.completedAt = null;
+	}
+	console.log(body);
+	//update with body object
+	Todo.findByIdAndUpdate(id, {$set: body}, {new:true}).then((todo) => {
+		console.log(todo);
+		if(!todo) {
+			return res.status(404).send({hi: 'boo'});
+		}
+		res.send({todo});
+	}).catch((e) => {
+		res.status(400).send(e);
+	});
+});
 
 app.listen(port, () => {
 	console.log(`started on port ${port}`)
