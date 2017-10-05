@@ -1,4 +1,6 @@
 
+require('./config/config');
+
 const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -12,7 +14,7 @@ var {User} = require('./models/user');
 
 const app = express();
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
@@ -105,7 +107,7 @@ app.patch('/todos/:id', (req, res) => {
 
 	if(!ObjectID.isValid(id)) {
 		console.log('id is not valid');
-		res.status(404).send({boo:'boo'});
+		res.status(404).send();
 	}
 
 	if(_.isBoolean(body.completed) && body.completed) {
@@ -116,12 +118,12 @@ app.patch('/todos/:id', (req, res) => {
 		//remove a value from db, just set to null
 		body.completedAt = null;
 	}
-	console.log(body);
+	// console.log(body);
 	//update with body object
 	Todo.findByIdAndUpdate(id, {$set: body}, {new:true}).then((todo) => {
-		console.log(todo);
+		// console.log(todo);
 		if(!todo) {
-			return res.status(404).send({hi: 'boo'});
+			return res.status(404).send();
 		}
 		res.send({todo});
 	}).catch((e) => {
