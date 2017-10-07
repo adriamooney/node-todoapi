@@ -11,6 +11,7 @@ const {mongoose} = require('./db/mongoose');
 
 var {Todo} = require('./models/todos');
 var {User} = require('./models/user');
+var {authenticate} = require('./middleware/authenticate');
 
 const app = express();
 
@@ -18,7 +19,7 @@ const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
-
+//POST todos
 app.post('/todos', (req, res) => {
 	console.log(req.body);
 	let todo = new Todo({
@@ -129,6 +130,30 @@ app.patch('/todos/:id', (req, res) => {
 	}).catch((e) => {
 		res.status(400).send(e);
 	});
+});
+
+//POST /users
+app.post('/users', (req, res) => {
+	// console.log(req.body);
+	let body = _.pick(req.body, ['email', 'password']);
+	let user = new User(body);
+	// console.log(user);
+
+	user.save().then(() => {
+		//method described in user model
+		return user.generateAuthToken();
+		
+	}).then((token) => {
+		res.header('x-auth', token).send(user);
+	}).catch((e) => {
+		res.status(400).send(e);
+	});
+});
+
+//GET my user
+
+app.get('/users/me', authenticate, (req, res) => {
+	res.send(req.user);
 });
 
 app.listen(port, () => {
