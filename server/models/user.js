@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const _ = require('lodash');
+
 
 
 //create User model
@@ -66,6 +68,16 @@ UserSchema.methods.generateAuthToken = function() {
 
 };
 
+UserSchema.methods.removeToken = function(token) {
+	let user = this;
+	return user.update({
+		$pull: {
+			tokens: {token}
+		}
+	});
+
+};
+
 //statics object creates model methods instead of instance methods
 UserSchema.statics.findByToken = function(token) {
 	//instance methods get called with the document as this (see, generateAuthToken above)
@@ -91,6 +103,56 @@ UserSchema.statics.findByToken = function(token) {
 
 	
 };
+
+UserSchema.statics.findByCredentials = function(email, password) {
+	let User = this;
+
+	//return this so you can chain the promise in server.js
+	return User.findOne({email}).then((user) => {
+		if(!user) {
+			//return a rejected promise, will trigger the catch case when called
+			return Promise.reject();
+		}
+
+		//bcrypt library doesn't support promises
+		//so we can put it inside of a new Promise like this:
+		//compare the password argument that was passed in by findByCredentials with the password that comes
+		//back from the user with User.findOne  (user.password)
+		return new Promise((resolve, reject) => {
+			bcrypt.compare(password, user.password, (err, res) => {
+				if(res) {
+					//this will return the user to the 'then' when the promise is called with findByCredentials
+					resolve(user);
+				}
+				else {
+					reject();
+				}
+			});
+		});
+
+	})
+};
+
+//mongoose middleware, executes before doc is saved to database
+UserSchema.pre('save', function(next) {
+	var user = this;
+	if(user.isModified('password')) {
+
+		//generates a salt and hashes the password with the salt.  then set the user.password to that hash
+		//value.  then call next to continue saving the user doc
+		bcrypt.genSalt(10, (err, salt) => {
+			bcrypt.hash(user.password, salt, (err, hash) => {
+				user.password = hash;
+				next();
+			});
+		});
+		//user.password
+		// user.password = hash;
+		
+	} else {
+		next();
+	}
+});
 
 let User = mongoose.model('User', UserSchema);
 

@@ -6,6 +6,8 @@ var {User} = require('./../models/user');
 // 	res.send(req.user);
 // });
 
+//findByToken is a statics method in user model
+//it verifies that the token is valid, then returns the user
 let authenticate = (req, res, next ) => {
 	let token = req.header('x-auth');
 
@@ -13,6 +15,7 @@ let authenticate = (req, res, next ) => {
 		if(!user) {
 			return Promise.reject();
 		}
+		//gives us access to the user and the token via the request (req) object when the route is called
 		req.user = user;
 		req.token = token;
 		next();
