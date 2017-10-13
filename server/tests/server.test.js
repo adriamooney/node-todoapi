@@ -140,7 +140,7 @@ describe('DELETE /todos/:id', ()=> {
 				}).catch((e) => done(e));
 				//query db using findbyid
 				//expect(null).toNotExist()
-			})
+			});
 
 	});
 
@@ -204,7 +204,7 @@ describe('PATCH /todos/:id', () => {
 			expect(res.body.todo.completedAt).toBeA('number');
 
 		})
-		.end(done)
+		.end(done);
 		//update text, set completed true
 		//200
 		//text is changed, completed is true, completedAt is a number .toBeA
@@ -212,11 +212,11 @@ describe('PATCH /todos/:id', () => {
 
 	it('should not update the todo as different user', (done) => {
 		//grab id of first item
-		let hexId = todos[1]._id.toHexString();
+		let hexId = todos[0]._id.toHexString();
 		let text = 'thee text is changed';
 		request(app)
 		.patch(`/todos/${hexId}`)
-		.set('x-auth', users[0].tokens[0].token)
+		.set('x-auth', users[1].tokens[0].token)
 		.send({
 			completed: true,
 			text
@@ -395,6 +395,6 @@ describe('DELETE /users/me/token', () => {
 				expect(user.tokens.length).toBe(0);
 				done();
 			}).catch((e) => done(e));
-		})
+		});
 	});
 });
