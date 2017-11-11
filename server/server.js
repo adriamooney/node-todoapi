@@ -10,15 +10,77 @@ const {ObjectID} = require('mongodb');
 
 const {mongoose} = require('./db/mongoose');
 
+const cors = require('cors');
+
+// const filepath = require('filepath');
+
+// const csv = require('csvtojson');
+// const converter = csv({
+//     noheader:true,
+//     trim:true
+// });
+
+
+////
+// const csvFilePath = filepath.create(__dirname, 'files', 'books.csv');
+
+// csv()
+// .fromFile(csvFilePath.toString())
+// .on('json',(jsonObj)=>{
+//     // combine csv header row and csv line to a json object
+//     // jsonObj.a ==> 1 or 4
+//     //console.log(jsonObj);
+//     //write to json here
+
+// })
+// .on('done',(error)=>{
+//     console.log(error);
+// })
+
+/////
+
 var {Todo} = require('./models/todos');
 var {User} = require('./models/user');
+var {Book} = require('./models/book');
 var {authenticate} = require('./middleware/authenticate');
 
 const app = express();
 
+//should whitelist the domains, but I couldn't get that to work for now.
+app.use(cors({origin: '*', exposedHeaders: ['x-auth'], allowedHeaders: ['Content-Type', 'X-Requested-With', 'x-auth']}));
+
 const port = process.env.PORT;
 
 app.use(bodyParser.json());
+
+//POST books
+app.post('/books', authenticate, (req, res) => {
+
+	//supply isbn as req:
+		
+	let book = new Book({
+			isbn: req.body.isbn, 
+			_creator: req.user._id
+		});
+
+	book.save().then((doc) => {
+		console.log(doc);
+		res.send(doc)
+	}).catch((e) => {
+		res.status(400).send(e);
+	});
+});
+
+//GET books
+app.get('/books', authenticate, (req, res) => {
+	Book.find({
+		// _creator: req.user._id
+	}).then((books)=> {
+		res.send({books});
+	}, (e) => {
+		res.status(400).send(e);
+	});
+});
 
 //POST todos
 app.post('/todos', authenticate, (req, res) => {
@@ -148,7 +210,7 @@ app.post('/users', (req, res) => {
 	let body = _.pick(req.body, ['email', 'password']);
 	let user = new User(body);
 	// console.log(user);
-
+	// res.setHeader('Access-Control-Allow-Origin', '*');
 	user.save().then(() => {
 		//method described in user model
 		return user.generateAuthToken();
