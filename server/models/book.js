@@ -1,29 +1,67 @@
 const mongoose = require('mongoose');
 const isbn = require('node-isbn');
 const _ = require('lodash');
+const mongoosePaginate = require('mongoose-paginate');
+// const searchable = require('mongoose-searchable');
 
 //this is a model:
 const BookSchema = new mongoose.Schema({
-	author_details: {
-		type: String
+	authors: {type: [String], index: true, text: true},
+	_creator: {
+		required: true,
+		type: mongoose.Schema.Types.ObjectId
 	},
 	title: {
-		type: String
+		type: String,
+		text: true,
+		index: true
 	},
 	isbn: {
 		type: String,
 		unique: true,
-		required: true
+		required: true,
+		text: true,
+		index: true
 	},
 	publisher: {
 		type: String
 	},
-	date_published: {
+	publishedDate: {
 		type: String
 	},
-	rating: {
-		type: String
-	},
+	industryIdentifiers: [{
+		 type: {type:String},
+		 identifier: {type:String}
+	}],
+	readingModes: {
+        text: {type:Boolean},
+        image: {type:Boolean}
+    },
+  	pageCount: {
+  		type: Number
+  	},
+  	printType: {
+  		type: String
+  	},
+  	categories: [String],
+  	averateRating: {
+  		type: Number
+  	},
+  	ratingsCount: {
+  		type: Number
+  	},
+  	contentVersion: {
+  		type: String
+  	},
+  	previewLink: {
+  		type: String
+  	},
+  	infoLink: {
+  		type: String
+  	},
+  	canonicalVolumeLink: {
+  		type: String
+  	},
 	rating: {
 		type: String
 	},
@@ -62,7 +100,11 @@ const BookSchema = new mongoose.Schema({
 	},
   	book_uuid: {
 		type: String
-	}
+	},
+	imageLinks: {
+		smallThumbnail: {type: String},
+		thumbnail: {type:String}
+    }
 });
 
 // isbn.resolve(isbn, function (err, book) {
@@ -92,6 +134,12 @@ BookSchema.pre('save', function(next) {
 	// });
 	
 });
+
+BookSchema.index({isbn: 'text', authors: 'text', title: 'text'});
+
+BookSchema.plugin(mongoosePaginate);
+
+// BookSchema.plugin(searchable);
 
 let Book = mongoose.model('Book', BookSchema);
 

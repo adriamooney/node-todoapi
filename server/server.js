@@ -12,33 +12,6 @@ const {mongoose} = require('./db/mongoose');
 
 const cors = require('cors');
 
-// const filepath = require('filepath');
-
-// const csv = require('csvtojson');
-// const converter = csv({
-//     noheader:true,
-//     trim:true
-// });
-
-
-////
-// const csvFilePath = filepath.create(__dirname, 'files', 'books.csv');
-
-// csv()
-// .fromFile(csvFilePath.toString())
-// .on('json',(jsonObj)=>{
-//     // combine csv header row and csv line to a json object
-//     // jsonObj.a ==> 1 or 4
-//     //console.log(jsonObj);
-//     //write to json here
-
-// })
-// .on('done',(error)=>{
-//     console.log(error);
-// })
-
-/////
-
 var {Todo} = require('./models/todos');
 var {User} = require('./models/user');
 var {Book} = require('./models/book');
@@ -72,15 +45,149 @@ app.post('/books', authenticate, (req, res) => {
 });
 
 //GET books
-app.get('/books', authenticate, (req, res) => {
-	Book.find({
-		// _creator: req.user._id
-	}).then((books)=> {
-		res.send({books});
+app.get('/books/:skip', authenticate, (req, res) => {
+
+	let skip = parseInt(req.params.skip);
+
+	var options = {
+	  // select: 'title, authors',
+	  sort: { authors: 1 },
+	  // populate: 'author',
+	  lean: true,
+	  offset: skip, 
+	  limit: 10
+	};
+
+	Book.paginate({_creator: req.user._id}, options).then((books) =>{
+		console.log(books.offset);
+	   res.send({books: books.docs, offset: books.offset, total: books.total});
 	}, (e) => {
 		res.status(400).send(e);
 	});
+
 });
+
+//search books
+app.get('/book/search', (req, res) => {
+
+	let terms = req.query.terms;
+	console.log(terms);
+	// https://www.npmjs.com/package/mongoose-searchable
+	// Book.search(terms, (error, foundBooks) =>{
+	// 	if(error) {
+	// 		res.status(400).send(error);
+	// 	}
+	// 	else {
+	// 		console.log(foundBooks);
+	// 		res.send({books: foundBooks});
+	// 	}
+    	
+	// });
+
+    Book.find({$text: {$search: terms}}, (err, results) =>{
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log(results);
+                }
+        });
+
+    // Book
+    // .find(
+    //     { $text : { $search : terms } }, 
+    //     { score : { $meta: "textScore" } }
+    // )
+    // .sort({ score : { $meta : 'textScore' } })
+    // .exec(function(err, results) {
+    //     // callback
+    // });
+
+});
+	// Book.find({$text: {$search: terms}})
+ //       .skip(0)
+ //       .limit(10)
+ //       .exec(function(err, docs) { ... });
+	// });
+
+//DELETE Book
+app.delete('/books/:id', authenticate, (req, res) => {
+	//get the id
+	//validate the id
+	//remove todo by id
+	//error 400 w/ empty body
+	//success if no doc send 404
+	//if doc, send doc w/ 200
+	let id = req.params.id;
+	//res.send(req.params);
+
+	if(!ObjectID.isValid(id)) {
+		console.log('id is not valid');
+		res.status(404).send();
+	}
+	Book.findOneAndRemove({
+		_id: id,
+		_creator: req.user._id
+	}).then((book)=> {
+		if(!book) {
+
+			res.status(404).send();
+		}
+		res.send({book});
+		// console.log('TodoById', todo);
+	}).catch((e) => {
+		res.status(400).send(e);
+	});
+});
+
+//UPDATE Book
+app.patch('/books/update/:id', authenticate, (req, res) => {
+	let id = req.params.id;
+	// console.log(id);
+	//pick properties off of the object that we want users to be able to update
+	//using lodash pick
+	let body = _.pick(req.body, ['title', 'authors']);
+
+	if(!ObjectID.isValid(id)) {
+		console.log('id is not valid');
+		res.status(404).send();
+	}
+	// console.log(body);
+	//update with body object
+	Book.findOneAndUpdate({_id: id, _creator: req.user._id}, {$set: body}, {new:true}).then((book) => {
+		// console.log(todo);
+		if(!book) {
+			return res.status(404).send();
+		}
+		res.send({book});
+	}).catch((e) => {
+		res.status(400).send(e);
+	});
+});
+
+//GET Book/:id
+app.get('/books/edit/:id', authenticate, (req,res)=> {
+	let id = req.params.id;
+	//res.send(req.params);
+
+	if(!ObjectID.isValid(id)) {
+		console.log('id is not valid');
+		res.status(404).send();
+	}
+	Book.findOne({
+		_id: id,
+		_creator: req.user._id
+	}).then((book)=> {
+		if(!book) {
+			res.status(404).send();
+		}
+		res.send({book});
+		// console.log('BookById', book);
+	}).catch((e) => {
+		res.status(400).send(e);
+	});
+});
+
+
 
 //POST todos
 app.post('/todos', authenticate, (req, res) => {
