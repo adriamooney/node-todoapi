@@ -20,7 +20,11 @@ var {authenticate} = require('./middleware/authenticate');
 const app = express();
 
 //should whitelist the domains, but I couldn't get that to work for now.
-app.use(cors({origin: '*', exposedHeaders: ['x-auth'], allowedHeaders: ['Content-Type', 'X-Requested-With', 'x-auth']}));
+app.use(cors({origin: '*', 
+	exposedHeaders: ['x-auth'], 
+	credentials: true,
+	methods: ['GET', 'GET,PUT,POST,DELETE,OPTIONS']
+	allowedHeaders: ['Content-Type', 'X-Requested-With', 'x-auth', 'application/json', 'Accept', 'Origin', 'content-type']}));
 
 const port = process.env.PORT;
 
@@ -72,23 +76,13 @@ app.get('/book/search', (req, res) => {
 
 	let terms = req.query.terms;
 	console.log(terms);
-	// https://www.npmjs.com/package/mongoose-searchable
-	// Book.search(terms, (error, foundBooks) =>{
-	// 	if(error) {
-	// 		res.status(400).send(error);
-	// 	}
-	// 	else {
-	// 		console.log(foundBooks);
-	// 		res.send({books: foundBooks});
-	// 	}
-    	
-	// });
 
     Book.find({$text: {$search: terms}}, (err, results) =>{
                 if (err) {
                     console.log(err);
                 } else {
                     console.log(results);
+                    res.send(results);
                 }
         });
 
@@ -102,12 +96,14 @@ app.get('/book/search', (req, res) => {
     //     // callback
     // });
 
-});
-	// Book.find({$text: {$search: terms}})
+    // Book.find({$text: {$search: terms}})
  //       .skip(0)
  //       .limit(10)
  //       .exec(function(err, docs) { ... });
-	// });
+    // });
+
+});
+
 
 //DELETE Book
 app.delete('/books/:id', authenticate, (req, res) => {

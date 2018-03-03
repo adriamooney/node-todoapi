@@ -139,6 +139,7 @@ BookSchema.index({isbn: 'text', authors: 'text', title: 'text'});
 
 BookSchema.plugin(mongoosePaginate);
 
+//remove this from packages
 // BookSchema.plugin(searchable);
 
 let Book = mongoose.model('Book', BookSchema);
